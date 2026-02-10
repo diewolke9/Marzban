@@ -9,7 +9,8 @@ from cryptography.hazmat.backends import default_backend
 
 from app import app, logger
 from config import (DEBUG, UVICORN_HOST, UVICORN_PORT, UVICORN_SSL_CERTFILE,
-                    UVICORN_SSL_KEYFILE, UVICORN_SSL_CA_TYPE, UVICORN_UDS)
+                    UVICORN_SSL_KEYFILE, UVICORN_SSL_CA_TYPE, UVICORN_UDS,
+                    UVICORN_BEHIND_PROXY)
 
 
 def validate_cert_and_key(cert_file_path, key_file_path, ca_type):
@@ -52,23 +53,21 @@ if __name__ == "__main__":
     if UVICORN_SSL_CA_TYPE not in ["public", "private"]:
         UVICORN_SSL_CA_TYPE = "public"
 
+    if UVICORN_UDS:
+        bind_args['uds'] = UVICORN_UDS
+    else:
+        bind_args['host'] = UVICORN_HOST
+        bind_args['port'] = UVICORN_PORT
+
     if UVICORN_SSL_CERTFILE and UVICORN_SSL_KEYFILE and UVICORN_SSL_CA_TYPE:
         validate_cert_and_key(UVICORN_SSL_CERTFILE, UVICORN_SSL_KEYFILE, UVICORN_SSL_CA_TYPE)
 
         bind_args['ssl_certfile'] = UVICORN_SSL_CERTFILE
         bind_args['ssl_keyfile'] = UVICORN_SSL_KEYFILE
 
-        if UVICORN_UDS:
-            bind_args['uds'] = UVICORN_UDS
-        else:
-            bind_args['host'] = UVICORN_HOST
-            bind_args['port'] = UVICORN_PORT
 
-    else:
-        if UVICORN_UDS:
-            bind_args['uds'] = UVICORN_UDS
-        else:
-
+    elif not UNICORN_UDS:
+        if not UVICORN_BEHIND_PROXY:
             logger.warning(f"""
 {click.style('IMPORTANT!', blink=True, bold=True, fg="yellow")}
 You're running Marzban without specifying {click.style('UVICORN_SSL_CERTFILE', italic=True, fg="magenta")} and {click.style('UVICORN_SSL_KEYFILE', italic=True, fg="magenta")}.
@@ -84,9 +83,9 @@ Use the following command:
 
 Then, navigate to {click.style(f'http://127.0.0.1:{UVICORN_PORT}', bold=True)} on your computer.
             """)
-
             bind_args['host'] = '127.0.0.1'
-            bind_args['port'] = UVICORN_PORT
+        else:
+            print("You are running Marzban behind a proxy :)")
 
     if DEBUG:
         bind_args['uds'] = None
