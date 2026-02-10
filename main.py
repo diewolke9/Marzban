@@ -66,7 +66,7 @@ if __name__ == "__main__":
         bind_args['ssl_keyfile'] = UVICORN_SSL_KEYFILE
 
 
-    elif not UNICORN_UDS:
+    elif not UVICORN_UDS:
         if not UVICORN_BEHIND_PROXY:
             logger.warning(f"""
 {click.style('IMPORTANT!', blink=True, bold=True, fg="yellow")}
